@@ -1,0 +1,184 @@
+---
+title: "NFL Draft Project"
+author: "Corey Taylor"
+date: "2/28/2020"
+output: 
+  html_document:
+        theme: darkly
+        toc: TRUE
+        toc_float: TRUE
+        code_folding: hide
+        
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+```{r warning=FALSE, message=FALSE}
+library(tidyverse)
+library(readxl)
+library(kableExtra)
+library(stargazer)
+```
+## Importing
+```{r}
+
+draft_2006 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 1)
+draft_2005 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 2)
+draft_2004 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 3)
+draft_2003 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 4)
+draft_2002 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 5)
+draft_2001 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 6)
+draft_2000 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 7)
+draft_1999 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 8)
+draft_1998 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 9)
+draft_1997 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 10)
+draft_1996 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 11)
+draft_1995 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 12)
+draft_1994 <- read_excel("C:/Users/Corey/Documents/GitHub/research/docs/nfldraftdata1.xlsx", sheet = 13)
+```
+## Cleaning
+```{r}
+draft_9406<-rbind(draft_1994, draft_1995,draft_1996,draft_1997,draft_1998,draft_1999,draft_2000,draft_2001,draft_2002,draft_2003,draft_2004,draft_2005,draft_2006)
+colnames(draft_9406)[1]<- "year"
+colnames(draft_9406)[2]<- "rd"
+colnames(draft_9406)[3]<- "pick"
+colnames(draft_9406)[4]<- "team"
+colnames(draft_9406)[5]<- "playername"
+colnames(draft_9406)[6]<- "position"
+colnames(draft_9406)[7]<- "age"
+colnames(draft_9406)[8]<- "retired"
+colnames(draft_9406)[9]<- "careerlength"
+colnames(draft_9406)[10]<- "allprofirst"
+colnames(draft_9406)[11]<- "probowl"
+colnames(draft_9406)[12]<- "starter"
+colnames(draft_9406)[13]<- "careerav"
+colnames(draft_9406)[14]<- "draftav"
+colnames(draft_9406)[15]<- "gamesplayed"
+colnames(draft_9406)[16]<- "college"
+draft_9406[is.na(draft_9406)]<- 0
+```
+
+
+## Regressions
+```{r}
+rdgp<-lm(gamesplayed~pick+as.factor(rd), draft_9406)
+summary(rdgp)
+rdcarav<-lm(careerav~pick+as.factor(rd), draft_9406)
+summary(rdcarav)
+rdst<-lm(starter~pick+as.factor(rd), draft_9406)
+summary(rdst)
+rdpb<-lm(probowl~pick+as.factor(rd), draft_9406)
+summary(rdpb)
+rdcl<-lm(careerlength~pick+as.factor(rd), draft_9406)
+summary(rdcl)
+
+```
+## Regression Results
+```{r results='asis'}
+stargazer( rdgp,rdcarav,rdst,rdpb,rdcl,
+           type = "html",
+           title = "Regression Results",
+           covariate.labels = c("Draft Pick", "Round 2","Round 3","Round 4","Round 5","Round 6","Round 7"),
+           dep.var.labels = c("Games Played", "Career AV", "Seasons Started","Probowls", "Career Length"),
+           omit.stat = c("f","ser","rsq"),
+           column.sep.width = "15pt."
+          
+)
+```
+
+
+```{r}
+draft_9406<-cbind(draft_9406,"fittedst"=rdst[["fitted.values"]])
+draft_9406<-cbind(draft_9406,"fittedgp"=rdgp[["fitted.values"]])
+draft_9406<-cbind(draft_9406,"fittedcarav"=rdcarav[["fitted.values"]])
+draft_9406<-cbind(draft_9406,"fittedpb"=rdpb[["fitted.values"]])
+draft_9406<-cbind(draft_9406,"fittedcl"=rdcl[["fitted.values"]])
+```
+
+
+```{r}
+draft_pick_st<-draft_9406 %>%
+  group_by(pick) %>%
+  summarize("meanst" = mean(starter, na.rm = TRUE),"predictedst"= mean(fittedst, na.rm = TRUE))
+
+draft_pick_gp<-draft_9406 %>%
+  group_by(pick) %>%
+  summarize("meangp" = mean(gamesplayed, na.rm = TRUE),"predictedgp"= mean(fittedgp, na.rm = TRUE))
+
+draft_pick_carav<-draft_9406 %>%
+  group_by(pick) %>%
+  summarize("meancarav" = mean(careerav, na.rm = TRUE),"predictedcarav"= mean(fittedcarav, na.rm = TRUE))
+
+draft_pick_pb<-draft_9406 %>%
+  group_by(pick) %>%
+  summarize("meanpb" = mean(probowl, na.rm = TRUE),"predictedpb"= mean(fittedpb, na.rm = TRUE))
+
+draft_pick_cl<-draft_9406 %>%
+  group_by(pick) %>%
+  summarize("meancl" = mean(careerlength, na.rm = TRUE),"predictedcl"= mean(fittedcl, na.rm = TRUE))
+
+  
+```
+
+
+```{r}
+vline<-c(32,64,96,128,160,192,224)
+vline_rds<-data.frame(vline)
+xaxis<-c(0,32,64,96,128,160,192,224)
+xaxis<-data.frame(xaxis)
+```
+
+## Visualizations
+```{r message=FALSE}
+ggplot(draft_pick_st, aes(x = pick, y = meanst))+
+  geom_point()+
+  geom_line(aes(pick, predictedst,),size=1, color = "red")+
+  geom_vline(xintercept = vline_rds$vline, color = "blue")+
+  scale_x_continuous(breaks = xaxis$xaxis)+
+  scale_y_continuous(breaks = 0:9)+
+  labs(title = "Mean Seasons Started by Draft Pick", y = "Mean Seasons Started", x = "Draft pick")
+ggsave("rdplotpickst.png", path = "C:/Users/Corey/Documents/GitHub/research/docs")
+```
+
+```{r message=FALSE}
+ggplot(draft_pick_gp, aes(x = pick, y = meangp))+
+  geom_point()+
+  geom_line(aes(pick, predictedgp),size=1, color = "red")+
+  geom_vline(xintercept = vline_rds$vline, color = "blue")+
+  scale_x_continuous(breaks = xaxis$xaxis)+
+  labs(title = "Mean Games Played by Draft Pick",  y = "Mean Games Played", x = "Draft pick")
+ggsave("rdplotpickgp.png", path = "C:/Users/Corey/Documents/GitHub/research/docs")
+```
+
+```{r message=FALSE}
+ggplot(draft_pick_carav, aes(x = pick, y = meancarav))+
+  geom_point()+
+  geom_line(aes(pick, predictedcarav),size=1, color = "red")+
+   geom_vline(xintercept = vline_rds$vline, color = "blue")+
+  scale_x_continuous(breaks = xaxis$xaxis)+
+  labs(title = "Mean Career AV by Draft Pick",  y = "Mean Career AV", x = "Draft pick")
+ggsave("rdplotpickcarav.png", path = "C:/Users/Corey/Documents/GitHub/research/docs")
+```
+
+```{r message=FALSE}
+ggplot(draft_pick_pb, aes(x = pick, y = meanpb))+
+  geom_point()+
+  geom_line(aes(pick, predictedpb),size=1, color = "red")+
+   geom_vline(xintercept = vline_rds$vline, color = "blue")+
+  scale_x_continuous(breaks = xaxis$xaxis)+
+  labs(title = "Mean Probowls by Draft Pick",  y = "Mean Probowls", x = "Draft pick")
+ggsave("rdplotpickpb.png", path = "C:/Users/Corey/Documents/GitHub/research/docs")
+```
+
+```{r message=FALSE}
+ggplot(draft_pick_cl, aes(x = pick, y = meancl))+
+  geom_point()+
+  geom_line(aes(pick, predictedcl),size=1, color = "red")+
+  geom_vline(xintercept = vline_rds$vline, color = "blue")+
+  scale_x_continuous(breaks = xaxis$xaxis)+
+  labs(title = "Mean Career Length by Draft Pick",  y = "Mean Career Length", x = "Draft pick")
+ggsave("rdplotpickcl.png", path = "C:/Users/Corey/Documents/GitHub/research/docs")
+```
+
