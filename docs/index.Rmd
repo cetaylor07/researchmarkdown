@@ -4,7 +4,7 @@ author: "Corey Taylor"
 date: "2/28/2020"
 output: 
   html_document:
-        theme: main.css
+        theme: darkly
         toc: TRUE
         toc_float: TRUE
         code_folding: hide
